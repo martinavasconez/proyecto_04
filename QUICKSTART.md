@@ -254,7 +254,7 @@ docker-compose down -v
 
 ---
 
-## Contacto
+## Soluciones
 
 Si algo no funciona:
 1. Verificar que los 3 servicios estén corriendo: `docker-compose ps`
