@@ -1,0 +1,25 @@
+FROM python:3.9-slim
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Instalar dependencias Python directamente
+RUN pip install --no-cache-dir \
+    psycopg2-binary==2.9.9 \
+    pandas==2.0.3 \
+    numpy==1.24.3
+
+# Copiar el script CLI
+COPY obt_builder_cli.py .
+
+# Punto de entrada
+ENTRYPOINT ["python", "obt_builder_cli.py"]
+
+# Comando por defecto (3 años: 2022-2024)
+CMD ["--mode", "full", "--year-start", "2022", "--year-end", "2024", "--services", "yellow,green", "--overwrite"]

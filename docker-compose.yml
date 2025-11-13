@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: nyc-taxi-postgres
+    environment:
+      - POSTGRES_USER=${PG_USER:-root}
+      - POSTGRES_PASSWORD=${PG_PASSWORD:-root}
+      - POSTGRES_DB=${PG_DB:-nyc_taxi}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data:rw
+    ports:
+      - "${PG_PORT:-5432}:5432"
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: nyc-taxi-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@admin.com}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-8081}:80"
+
+  spark-notebook:
+    image: jupyter/pyspark-notebook:latest
+    container_name: spark-notebook
+    ports:
+      - "8888:8888"  
+      - "4040:4040"  
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./data:/home/jovyan/data
+    environment:
+      - SPARK_LOCAL_IP=0.0.0.0
+      - PYSPARK_PYTHON=python
+      - JUPYTER_ENABLE_LAB=yes
+      # Postgres connection variables
+      - PG_HOST=${PG_HOST:-postgres}
+      - PG_PORT=${PG_PORT:-5432}
+      - PG_DB=${PG_DB:-nyc_taxi}
+      - PG_USER=${PG_USER:-root}
+      - PG_PASSWORD=${PG_PASSWORD:-root}
+      - PG_SCHEMA_RAW=${PG_SCHEMA_RAW:-raw}
+      - PG_SCHEMA_ANALYTICS=${PG_SCHEMA_ANALYTICS:-analytics}
+      # Ingestion parameters
+      - START_YEAR=${START_YEAR:-2015}
+      - END_YEAR=${END_YEAR:-2025}
+      - SERVICES=${SERVICES:-yellow,green}
+      - BASE_URL=${BASE_URL:-https://d37ci6vzurychx.cloudfront.net/trip-data}
+      - BATCH_SIZE=${BATCH_SIZE:-1000000}
+    user: root
+    command: >
+      bash -c "
+      pip install snowflake-connector-python snowflake-sqlalchemy requests pyarrow &&
+      start-notebook.sh --NotebookApp.token='' --NotebookApp.password='' \
+        --ServerApp.iopub_data_rate_limit=1.0e10 \
+        --ServerApp.rate_limit_window=10.0
+      "
